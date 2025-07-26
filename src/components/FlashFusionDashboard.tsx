@@ -14,10 +14,39 @@ import {
   Clock,
   DollarSign,
   Users,
-  BarChart3
+  BarChart3,
+  Settings
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const FlashFusionDashboard = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    
+    // Simulate report generation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    toast({
+      title: "Report Generated",
+      description: "Your comprehensive analytics report has been generated successfully.",
+    });
+    
+    setIsGenerating(false);
+  };
+
+  const handleAgentAction = (agentName: string) => {
+    toast({
+      title: `${agentName} Activated`,
+      description: `${agentName} is now processing your request.`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -38,7 +67,13 @@ const FlashFusionDashboard = () => {
                 <CheckCircle className="w-3 h-3 mr-1" />
                 All Systems Operational
               </Badge>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/settings")}
+                className="hover:bg-muted"
+              >
+                <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
             </div>
@@ -117,53 +152,87 @@ const FlashFusionDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg border border-border/40 bg-background/20">
+                <div 
+                  className="p-4 rounded-lg border border-border/40 bg-background/20 hover:bg-background/30 cursor-pointer transition-all duration-200 hover:border-fusion-success/50"
+                  onClick={() => handleAgentAction("Onboarding Agent")}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-medium text-foreground">Onboarding Agent</h4>
                     <Badge className="bg-fusion-success/20 text-fusion-success border-fusion-success/30">Active</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">Auto-detects platforms, imports products, configures sync settings</p>
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-muted-foreground">Success Rate</span>
                     <span className="text-fusion-success font-medium">96.2%</span>
                   </div>
+                  <Button size="sm" variant="outline" className="w-full text-xs h-6">
+                    Run Onboarding
+                  </Button>
                 </div>
 
-                <div className="p-4 rounded-lg border border-border/40 bg-background/20">
+                <div 
+                  className="p-4 rounded-lg border border-border/40 bg-background/20 hover:bg-background/30 cursor-pointer transition-all duration-200 hover:border-fusion-primary/50"
+                  onClick={() => handleAgentAction("Error Detection Agent")}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-medium text-foreground">Error Detection Agent</h4>
                     <Badge className="bg-fusion-success/20 text-fusion-success border-fusion-success/30">Active</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">Monitors API failures, inventory mismatches, payment issues</p>
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-muted-foreground">Response Time</span>
                     <span className="text-fusion-primary font-medium">&lt; 30s</span>
                   </div>
+                  <Button size="sm" variant="outline" className="w-full text-xs h-6">
+                    Run Scan
+                  </Button>
                 </div>
 
-                <div className="p-4 rounded-lg border border-border/40 bg-background/20">
+                <div 
+                  className="p-4 rounded-lg border border-border/40 bg-background/20 hover:bg-background/30 cursor-pointer transition-all duration-200 hover:border-fusion-warning/50"
+                  onClick={() => handleAgentAction("Risk Prediction Agent")}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-medium text-foreground">Risk Prediction Agent</h4>
                     <Badge className="bg-fusion-warning/20 text-fusion-warning border-fusion-warning/30">Training</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">Predicts policy changes, fee adjustments, platform risks</p>
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-muted-foreground">Accuracy</span>
                     <span className="text-fusion-warning font-medium">87.4%</span>
                   </div>
+                  <Button size="sm" variant="outline" className="w-full text-xs h-6" disabled>
+                    Training...
+                  </Button>
                 </div>
 
-                <div className="p-4 rounded-lg border border-border/40 bg-background/20">
+                <div 
+                  className="p-4 rounded-lg border border-border/40 bg-background/20 hover:bg-background/30 cursor-pointer transition-all duration-200 hover:border-fusion-secondary/50"
+                  onClick={() => handleAgentAction("Sales Optimization Agent")}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-medium text-foreground">Sales Optimization Agent</h4>
                     <Badge className="bg-fusion-secondary/20 text-fusion-secondary border-fusion-secondary/30">Beta</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">Optimizes pricing, inventory, marketing campaigns</p>
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-muted-foreground">ROI Impact</span>
                     <span className="text-fusion-secondary font-medium">+34%</span>
                   </div>
+                  <Button size="sm" variant="outline" className="w-full text-xs h-6">
+                    Optimize Now
+                  </Button>
                 </div>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-border/40">
+                <Button 
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="w-full bg-fusion-primary hover:bg-fusion-primary/90"
+                >
+                  {isGenerating ? "Generating Report..." : "Generate Analytics Report"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -212,7 +281,11 @@ const FlashFusionDashboard = () => {
                 </div>
               </div>
               
-              <Button variant="outline" className="w-full border-fusion-warning/30 text-fusion-warning hover:bg-fusion-warning/10">
+              <Button 
+                variant="outline" 
+                className="w-full border-fusion-warning/30 text-fusion-warning hover:bg-fusion-warning/10"
+                onClick={() => navigate("/alerts")}
+              >
                 View All Alerts
               </Button>
             </CardContent>
@@ -232,7 +305,15 @@ const FlashFusionDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               
               {/* Shopify */}
-              <div className="p-4 rounded-lg border border-border/40 bg-background/20">
+              <div 
+                className="p-4 rounded-lg border border-border/40 bg-background/20 hover:bg-background/30 cursor-pointer transition-all duration-200 hover:border-fusion-success/50"
+                onClick={() => {
+                  toast({
+                    title: "Shopify Integration",
+                    description: "Opening Shopify sync dashboard...",
+                  });
+                }}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-8 h-8 rounded bg-fusion-success/20 flex items-center justify-center">
                     <Store className="w-4 h-4 text-fusion-success" />
@@ -241,7 +322,7 @@ const FlashFusionDashboard = () => {
                 </div>
                 <h4 className="font-medium text-foreground mb-1">Shopify</h4>
                 <p className="text-xs text-muted-foreground mb-2">OAuth • Products, Orders, Inventory</p>
-                <div className="space-y-1">
+                <div className="space-y-1 mb-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Sync:</span>
                     <span className="text-fusion-success">5min</span>
@@ -251,6 +332,9 @@ const FlashFusionDashboard = () => {
                     <span className="text-fusion-success">Healthy</span>
                   </div>
                 </div>
+                <Button size="sm" variant="outline" className="w-full text-xs h-6">
+                  Manage Integration
+                </Button>
               </div>
 
               {/* Etsy */}
@@ -276,7 +360,15 @@ const FlashFusionDashboard = () => {
               </div>
 
               {/* TikTok Shop */}
-              <div className="p-4 rounded-lg border border-border/40 bg-background/20">
+              <div 
+                className="p-4 rounded-lg border border-border/40 bg-background/20 hover:bg-background/30 cursor-pointer transition-all duration-200 hover:border-fusion-secondary/50"
+                onClick={() => {
+                  toast({
+                    title: "TikTok Shop Setup",
+                    description: "Starting TikTok Shop integration process...",
+                  });
+                }}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-8 h-8 rounded bg-fusion-secondary/20 flex items-center justify-center">
                     <Store className="w-4 h-4 text-fusion-secondary" />
@@ -285,7 +377,7 @@ const FlashFusionDashboard = () => {
                 </div>
                 <h4 className="font-medium text-foreground mb-1">TikTok Shop</h4>
                 <p className="text-xs text-muted-foreground mb-2">OAuth • Products, Orders</p>
-                <div className="space-y-1">
+                <div className="space-y-1 mb-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Sync:</span>
                     <span className="text-muted-foreground">--</span>
@@ -295,6 +387,9 @@ const FlashFusionDashboard = () => {
                     <span className="text-fusion-warning">Setup Required</span>
                   </div>
                 </div>
+                <Button size="sm" variant="outline" className="w-full text-xs h-6 border-fusion-secondary/30 text-fusion-secondary">
+                  Complete Setup
+                </Button>
               </div>
 
               {/* Stripe */}
