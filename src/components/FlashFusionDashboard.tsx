@@ -15,15 +15,18 @@ import {
   DollarSign,
   Users,
   BarChart3,
-  Settings
+  Settings,
+  LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const FlashFusionDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateReport = async () => {
@@ -44,6 +47,15 @@ const FlashFusionDashboard = () => {
     toast({
       title: `${agentName} Activated`,
       description: `${agentName} is now processing your request.`,
+    });
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully.",
     });
   };
 
@@ -75,6 +87,15 @@ const FlashFusionDashboard = () => {
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleLogout}
+                className="hover:bg-muted"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
               </Button>
             </div>
           </div>
