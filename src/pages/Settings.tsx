@@ -9,10 +9,18 @@ import { Settings, Bell, Shield, Database, Users, ArrowLeft } from "lucide-react
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
+
+const settingsSchema = z.object({
+  apiTimeout: z.number().min(1, "Timeout must be at least 1 second").max(300, "Timeout cannot exceed 300 seconds"),
+  dataRetention: z.number().min(1, "Retention must be at least 1 month").max(120, "Retention cannot exceed 120 months"),
+});
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [settings, setSettings] = useState({
     notifications: true,
     autoSync: true,
@@ -20,12 +28,35 @@ const SettingsPage = () => {
     dataRetention: "12",
     apiTimeout: "30"
   });
+  const [errors, setErrors] = useState<{ apiTimeout?: string; dataRetention?: string }>({});
 
   const handleSave = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your preferences have been updated successfully.",
-    });
+    try {
+      settingsSchema.parse({
+        apiTimeout: parseInt(settings.apiTimeout) || 0,
+        dataRetention: parseInt(settings.dataRetention) || 0,
+      });
+      setErrors({});
+      toast({
+        title: "Settings saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: { apiTimeout?: string; dataRetention?: string } = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as keyof typeof fieldErrors] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast({
+          title: "Validation error",
+          description: "Please check the form for errors.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const handleReset = () => {
@@ -36,9 +67,19 @@ const SettingsPage = () => {
       dataRetention: "12",
       apiTimeout: "30"
     });
+    setErrors({});
     toast({
       title: "Settings reset",
       description: "All settings have been restored to defaults.",
+    });
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully.",
     });
   };
 
@@ -72,6 +113,9 @@ const SettingsPage = () => {
               </Button>
               <Button variant="outline" onClick={handleReset}>
                 Reset to Defaults
+              </Button>
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
               </Button>
             </div>
           </div>
@@ -140,20 +184,40 @@ const SettingsPage = () => {
                 <Input
                   id="timeout"
                   type="number"
+                  min={1}
+                  max={300}
                   value={settings.apiTimeout}
-                  onChange={(e) => setSettings({...settings, apiTimeout: e.target.value})}
-                  className="bg-background"
+                  onChange={(e) => {
+                    setSettings({...settings, apiTimeout: e.target.value});
+                    if (errors.apiTimeout) {
+                      setErrors({ ...errors, apiTimeout: undefined });
+                    }
+                  }}
+                  className={`bg-background ${errors.apiTimeout ? 'border-red-500' : ''}`}
                 />
+                {errors.apiTimeout && (
+                  <p className="text-sm text-red-500">{errors.apiTimeout}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="retention" className="text-foreground">Data Retention (months)</Label>
                 <Input
                   id="retention"
                   type="number"
+                  min={1}
+                  max={120}
                   value={settings.dataRetention}
-                  onChange={(e) => setSettings({...settings, dataRetention: e.target.value})}
-                  className="bg-background"
+                  onChange={(e) => {
+                    setSettings({...settings, dataRetention: e.target.value});
+                    if (errors.dataRetention) {
+                      setErrors({ ...errors, dataRetention: undefined });
+                    }
+                  }}
+                  className={`bg-background ${errors.dataRetention ? 'border-red-500' : ''}`}
                 />
+                {errors.dataRetention && (
+                  <p className="text-sm text-red-500">{errors.dataRetention}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-between p-4 rounded-lg border border-fusion-warning/30 bg-fusion-warning/5">
