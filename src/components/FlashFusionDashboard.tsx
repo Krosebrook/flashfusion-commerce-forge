@@ -16,17 +16,21 @@ import {
   Users,
   BarChart3,
   Settings,
-  LogOut
+  LogOut,
+  AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { ErrorNotificationBell } from "@/components/ErrorNotificationBell";
 
 const FlashFusionDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signOut } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateReport = async () => {
@@ -79,6 +83,20 @@ const FlashFusionDashboard = () => {
                 <CheckCircle className="w-3 h-3 mr-1" />
                 All Systems Operational
               </Badge>
+              {isAdmin && (
+                <>
+                  <ErrorNotificationBell />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate("/admin/errors")}
+                    className="hover:bg-muted"
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Error Dashboard
+                  </Button>
+                </>
+              )}
               <Button 
                 variant="outline" 
                 size="sm"
