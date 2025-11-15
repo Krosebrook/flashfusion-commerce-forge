@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Bell, Shield, Database, Users, ArrowLeft } from "lucide-react";
+import { Settings, Bell, Shield, Database, Users, ArrowLeft, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const settingsSchema = z.object({
@@ -20,7 +22,8 @@ const settingsSchema = z.object({
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const [settings, setSettings] = useState({
     notifications: true,
     autoSync: true,
@@ -29,6 +32,62 @@ const SettingsPage = () => {
     apiTimeout: "30"
   });
   const [errors, setErrors] = useState<{ apiTimeout?: string; dataRetention?: string }>({});
+  const [bootstrapping, setBootstrapping] = useState(false);
+  const [hasAdminRole, setHasAdminRole] = useState(false);
+
+  useEffect(() => {
+    checkAdminRole();
+  }, [user]);
+
+  const checkAdminRole = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+    
+    setHasAdminRole(!!data);
+  };
+
+  const handleBootstrapAdmin = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to bootstrap admin access.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBootstrapping(true);
+    try {
+      const { error } = await supabase.rpc('bootstrap_admin', {
+        target_user: user.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Admin access granted",
+        description: "You now have administrator privileges. Refresh the page to see admin features.",
+      });
+      
+      // Refresh to update admin status
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error: any) {
+      console.error('Bootstrap admin error:', error);
+      toast({
+        title: "Failed to grant admin access",
+        description: error.message || "An error occurred while granting admin access.",
+        variant: "destructive",
+      });
+    } finally {
+      setBootstrapping(false);
+    }
+  };
 
   const handleSave = () => {
     try {
@@ -258,6 +317,105 @@ const SettingsPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin Bootstrap Card - Only shown if user is NOT admin */}
+        {!hasAdminRole && (
+          <Card className="bg-gradient-card border-border/40 shadow-card border-primary/30">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Crown className="w-5 h-5 text-primary" />
+                <CardTitle className="text-foreground">Administrator Access</CardTitle>
+              </div>
+              <CardDescription>Grant yourself admin privileges for this application</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+                <p className="text-sm text-foreground mb-4">
+                  As an administrator, you'll have access to:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-2 ml-4">
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                    Error Dashboard with comprehensive monitoring
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                    Error Alert Configuration system
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                    Real-time error notifications
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                    Advanced system analytics and insights
+                  </li>
+                </ul>
+              </div>
+              <Button
+                onClick={handleBootstrapAdmin}
+                disabled={bootstrapping}
+                className="w-full"
+              >
+                {bootstrapping ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Granting Access...
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-4 h-4 mr-2" />
+                    Grant Admin Access
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                This uses the <code className="bg-muted px-1 py-0.5 rounded text-foreground">bootstrap_admin</code> function to securely grant admin privileges
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Admin Status Card - Only shown if user IS admin */}
+        {hasAdminRole && (
+          <Card className="bg-gradient-card border-border/40 shadow-card border-primary/30">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Crown className="w-5 h-5 text-primary" />
+                <CardTitle className="text-foreground">Administrator Status</CardTitle>
+              </div>
+              <CardDescription>You have administrator privileges</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-primary/30 bg-primary/5">
+                <div className="space-y-0.5">
+                  <Label className="text-foreground">Admin Role Active</Label>
+                  <p className="text-sm text-muted-foreground">You have access to all admin features</p>
+                </div>
+                <Badge className="bg-primary/20 text-primary border-primary/30">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Admin
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin/errors')}
+                  className="justify-start"
+                >
+                  View Error Dashboard
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin/error-alerts')}
+                  className="justify-start"
+                >
+                  Configure Alerts
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
