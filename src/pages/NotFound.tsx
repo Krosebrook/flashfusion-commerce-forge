@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { logError } from "@/lib/errorLogger";
 
 const NotFound = () => {
   const location = useLocation();
@@ -9,6 +10,18 @@ const NotFound = () => {
     if (import.meta.env.DEV) {
       console.error('404:', location.pathname);
     }
+
+    // Log to server-side error tracking
+    logError({
+      errorType: '404',
+      errorCode: 'NOT_FOUND',
+      path: location.pathname,
+      message: 'Page not found',
+      metadata: {
+        referrer: document.referrer,
+        search: location.search,
+      }
+    });
   }, [location.pathname]);
 
   return (

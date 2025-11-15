@@ -349,6 +349,48 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          error_type: string
+          id: string
+          ip_address: unknown
+          message: string | null
+          metadata: Json | null
+          path: string
+          stack_trace: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          error_type: string
+          id?: string
+          ip_address?: unknown
+          message?: string | null
+          metadata?: Json | null
+          path: string
+          stack_trace?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          error_type?: string
+          id?: string
+          ip_address?: unknown
+          message?: string | null
+          metadata?: Json | null
+          path?: string
+          stack_trace?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       failed_login_attempts: {
         Row: {
           attempted_at: string
