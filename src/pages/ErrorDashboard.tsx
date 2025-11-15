@@ -165,6 +165,16 @@ const ErrorDashboard = () => {
             <h1 className="text-3xl font-bold text-foreground">Error Dashboard</h1>
           </div>
           <div className="flex gap-2">
+            {import.meta.env.DEV && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/admin/test-errors")}
+                className="hover:bg-muted"
+              >
+                Test Errors
+              </Button>
+            )}
             <Button variant="outline" onClick={exportToCSV}>
               <Download className="h-4 w-4 mr-2" />
               Export
