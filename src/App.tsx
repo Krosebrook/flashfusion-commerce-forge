@@ -10,6 +10,7 @@ import Alerts from "./pages/Alerts";
 import Auth from "./pages/Auth";
 import ErrorDashboard from "./pages/ErrorDashboard";
 import ErrorAlertConfig from "./pages/ErrorAlertConfig";
+import AdminTestErrors from "./pages/AdminTestErrors";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { useAuth } from "./hooks/useAuth";
@@ -39,6 +40,7 @@ const AppRoutes = () => {
       <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
       <Route path="/admin/errors" element={<AdminRoute><ErrorDashboard /></AdminRoute>} />
       <Route path="/admin/error-alerts" element={<AdminRoute><ErrorAlertConfig /></AdminRoute>} />
+      <Route path="/admin/test-errors" element={<AdminRoute><AdminTestErrors /></AdminRoute>} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
