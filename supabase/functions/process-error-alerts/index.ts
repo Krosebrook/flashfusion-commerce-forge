@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string);
 
 interface ProcessAlertRequest {
   error_log_id: string;
@@ -91,10 +94,60 @@ serve(async (req) => {
           }
         }
 
-        // TODO: Send email if enabled (requires email service integration)
+        // Send email notification if enabled
         if (config.email_enabled) {
-          console.log(`Email notification would be sent for config "${config.alert_name}"`);
-          // Implement email sending here using Resend or similar service
+          try {
+            // Get user email
+            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+              config.user_id
+            );
+
+            if (userError || !userData?.user?.email) {
+              console.error('Failed to get user email:', userError);
+            } else {
+              const { error: emailError } = await resend.emails.send({
+                from: 'FlashFusion Alerts <alerts@resend.dev>',
+                to: [userData.user.email],
+                subject: `⚠️ ${config.alert_name} - Error Alert Triggered`,
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #dc2626;">Error Alert Triggered</h2>
+                    <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0;">
+                      <h3 style="margin-top: 0;">${config.alert_name}</h3>
+                      <p style="font-size: 16px; margin: 8px 0;">
+                        <strong>${count}</strong> <code>${error_type}</code> errors detected in the last 
+                        <strong>${config.threshold_minutes}</strong> minutes
+                      </p>
+                    </div>
+                    <div style="margin: 20px 0;">
+                      <p><strong>Alert Configuration:</strong></p>
+                      <ul>
+                        <li>Threshold: ${config.threshold_count} errors in ${config.threshold_minutes} minutes</li>
+                        <li>Error Types Monitored: ${config.error_types.join(', ')}</li>
+                        <li>Severity: ${config.severity_level}</li>
+                      </ul>
+                    </div>
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                      <p style="color: #6b7280; font-size: 14px;">
+                        View the full error dashboard to see details and take action.
+                      </p>
+                      <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+                        This is an automated alert from your FlashFusion error monitoring system.
+                      </p>
+                    </div>
+                  </div>
+                `,
+              });
+
+              if (emailError) {
+                console.error('Failed to send email:', emailError);
+              } else {
+                console.log(`Email sent to ${userData.user.email} for config "${config.alert_name}"`);
+              }
+            }
+          } catch (emailErr) {
+            console.error('Error sending email notification:', emailErr);
+          }
         }
 
         // Update last triggered timestamp
