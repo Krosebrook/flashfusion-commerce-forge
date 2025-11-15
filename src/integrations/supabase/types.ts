@@ -349,6 +349,54 @@ export type Database = {
         }
         Relationships: []
       }
+      error_alert_configs: {
+        Row: {
+          alert_name: string
+          created_at: string
+          email_enabled: boolean
+          error_types: string[]
+          id: string
+          in_app_enabled: boolean
+          is_enabled: boolean
+          last_triggered_at: string | null
+          severity_level: string
+          threshold_count: number
+          threshold_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_name: string
+          created_at?: string
+          email_enabled?: boolean
+          error_types: string[]
+          id?: string
+          in_app_enabled?: boolean
+          is_enabled?: boolean
+          last_triggered_at?: string | null
+          severity_level?: string
+          threshold_count?: number
+          threshold_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_name?: string
+          created_at?: string
+          email_enabled?: boolean
+          error_types?: string[]
+          id?: string
+          in_app_enabled?: boolean
+          is_enabled?: boolean
+          last_triggered_at?: string | null
+          severity_level?: string
+          threshold_count?: number
+          threshold_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           created_at: string
@@ -390,6 +438,57 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      error_notifications: {
+        Row: {
+          alert_config_id: string | null
+          created_at: string
+          error_log_id: string | null
+          id: string
+          is_read: boolean
+          message: string
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          alert_config_id?: string | null
+          created_at?: string
+          error_log_id?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          severity?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          alert_config_id?: string | null
+          created_at?: string
+          error_log_id?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          severity?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_notifications_alert_config_id_fkey"
+            columns: ["alert_config_id"]
+            isOneToOne: false
+            referencedRelation: "error_alert_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_notifications_error_log_id_fkey"
+            columns: ["error_log_id"]
+            isOneToOne: false
+            referencedRelation: "error_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       failed_login_attempts: {
         Row: {

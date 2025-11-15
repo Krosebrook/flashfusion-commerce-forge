@@ -79,6 +79,14 @@ serve(async (req) => {
 
     console.log(`Logged ${error_type} error from ${user_id || 'anonymous'} at ${path}`);
 
+    // Trigger alert processing (fire and forget)
+    supabaseAdmin.functions.invoke('process-error-alerts', {
+      body: {
+        error_log_id: data.id,
+        error_type: error_type
+      }
+    }).catch(err => console.error('Alert processing failed:', err));
+
     return new Response(
       JSON.stringify({ success: true, log_id: data.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
