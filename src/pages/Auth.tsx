@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
@@ -21,6 +22,17 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
+
+  const onCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+  };
+
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    captchaRef.current?.resetCaptcha();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +40,16 @@ const Auth = () => {
     try {
       authSchema.parse({ email, password });
       setErrors({});
+      
+      if (!captchaToken) {
+        toast({
+          title: "Verification required",
+          description: "Please complete the captcha verification.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setLoading(true);
 
       const redirectUrl = `${window.location.origin}/`;
@@ -36,6 +58,9 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
+          options: {
+            captchaToken: captchaToken || undefined,
+          },
         });
 
         if (error) throw error;
@@ -51,6 +76,7 @@ const Auth = () => {
           password,
           options: {
             emailRedirectTo: redirectUrl,
+            captchaToken: captchaToken || undefined,
           },
         });
 
@@ -77,6 +103,7 @@ const Auth = () => {
           variant: "destructive",
         });
       }
+      resetCaptcha();
     } finally {
       setLoading(false);
     }
@@ -135,7 +162,20 @@ const Auth = () => {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <div className="flex justify-center">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY || "10000000-ffff-ffff-ffff-000000000001"}
+                onVerify={onCaptchaVerify}
+                onError={() => {
+                  console.error("hCaptcha error");
+                  resetCaptcha();
+                }}
+                onExpire={resetCaptcha}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading || !captchaToken}>
               {loading ? "Loading..." : isLogin ? "Login" : "Sign Up"}
             </Button>
           </form>
@@ -146,6 +186,7 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
+                resetCaptcha();
               }}
               className="text-primary hover:underline"
               disabled={loading}
