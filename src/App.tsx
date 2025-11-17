@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import ErrorDashboard from "./pages/ErrorDashboard";
 import ErrorAlertConfig from "./pages/ErrorAlertConfig";
 import AdminTestErrors from "./pages/AdminTestErrors";
+import RLSTest from "./pages/RLSTest";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { useAuth } from "./hooks/useAuth";
@@ -38,6 +39,7 @@ const AppRoutes = () => {
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+      <Route path="/rls-test" element={<ProtectedRoute><RLSTest /></ProtectedRoute>} />
       <Route path="/admin/errors" element={<AdminRoute><ErrorDashboard /></AdminRoute>} />
       <Route path="/admin/error-alerts" element={<AdminRoute><ErrorAlertConfig /></AdminRoute>} />
       <Route path="/admin/test-errors" element={<AdminRoute><AdminTestErrors /></AdminRoute>} />
