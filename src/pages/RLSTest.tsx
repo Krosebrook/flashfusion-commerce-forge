@@ -5,9 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, CheckCircle, XCircle, Key, User, Building2 } from "lucide-react";
+import { Shield, CheckCircle, XCircle, Key, User, Building2, Download, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TenantContextSimulator } from "@/components/TenantContextSimulator";
+import { generateSecurityAuditReport, generateJSONReport, downloadReport } from "@/lib/securityAuditReport";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface KVItem {
   key: string;
@@ -17,13 +24,15 @@ interface KVItem {
 }
 
 const RLSTest = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { toast } = useToast();
   const [myData, setMyData] = useState<KVItem[]>([]);
   const [testKey, setTestKey] = useState("");
   const [testValue, setTestValue] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
+  const [jwtClaims, setJwtClaims] = useState<any>(null);
 
   const fetchMyData = async () => {
     if (!user) return;
@@ -123,7 +132,63 @@ const RLSTest = () => {
     if (user) {
       fetchMyData();
     }
-  }, [user]);
+    
+    if (session?.access_token) {
+      try {
+        const base64Url = session.access_token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const claims = JSON.parse(jsonPayload);
+        setJwtClaims(claims);
+        setCurrentTenantId(claims.tenant_id || null);
+      } catch (error) {
+        console.error("Failed to decode JWT:", error);
+      }
+    }
+  }, [user, session]);
+
+  const exportSecurityReport = (format: 'txt' | 'json') => {
+    if (!user) return;
+
+    const reportData = {
+      user: {
+        id: user.id,
+        email: user.email
+      },
+      tenantContext: currentTenantId,
+      jwtClaims: jwtClaims,
+      rlsPolicies: {
+        userScoped: ['read_own', 'insert_own', 'update_own', 'delete_own'],
+        tenantScoped: ['tenant_read', 'tenant_write', 'tenant_update', 'tenant_delete'],
+        removed: ['public_read']
+      },
+      testResults: {
+        totalRecords: myData.length,
+        userRecords: myData.filter(r => !r.tenant_id).length,
+        tenantRecords: myData.filter(r => r.tenant_id).length,
+        records: myData
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    
+    if (format === 'txt') {
+      const report = generateSecurityAuditReport(reportData);
+      downloadReport(report, `rls-security-audit-${timestamp}.txt`);
+    } else {
+      const report = generateJSONReport(reportData);
+      downloadReport(report, `rls-security-audit-${timestamp}.json`);
+    }
+
+    toast({
+      title: "Report exported",
+      description: `Security audit report downloaded as ${format.toUpperCase()}`,
+    });
+  };
 
   if (!user) {
     return (
@@ -146,12 +211,34 @@ const RLSTest = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">RLS Policy Test</h1>
-            <p className="text-muted-foreground">Testing kv_store_e259a3bb table access control</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">RLS Policy Test</h1>
+              <p className="text-muted-foreground">Testing kv_store_e259a3bb table access control</p>
+            </div>
           </div>
+          
+          {/* Export Report Button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export Report
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportSecurityReport('txt')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Text Report (.txt)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportSecurityReport('json')}>
+                <FileText className="h-4 w-4 mr-2" />
+                JSON Report (.json)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Current User Info */}
