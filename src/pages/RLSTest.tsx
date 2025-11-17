@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, CheckCircle, XCircle, Key, User } from "lucide-react";
+import { Shield, CheckCircle, XCircle, Key, User, Building2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface KVItem {
   key: string;
@@ -20,6 +21,7 @@ const RLSTest = () => {
   const [myData, setMyData] = useState<KVItem[]>([]);
   const [testKey, setTestKey] = useState("");
   const [testValue, setTestValue] = useState("");
+  const [tenantId, setTenantId] = useState("");
   const [loading, setLoading] = useState(false);
 
   const fetchMyData = async () => {
@@ -40,7 +42,7 @@ const RLSTest = () => {
     }
   };
 
-  const insertTestData = async () => {
+  const insertTestData = async (withTenant = false) => {
     if (!user || !testKey || !testValue) {
       toast({
         title: "Missing data",
@@ -50,14 +52,29 @@ const RLSTest = () => {
       return;
     }
 
+    if (withTenant && !tenantId) {
+      toast({
+        title: "Missing tenant ID",
+        description: "Please enter a tenant ID for tenant-scoped data",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
+    const insertData: any = {
+      key: testKey,
+      value: { data: testValue },
+      user_id: user.id
+    };
+
+    if (withTenant) {
+      insertData.tenant_id = tenantId;
+    }
+
     const { error } = await supabase
       .from('kv_store_e259a3bb')
-      .insert({
-        key: testKey,
-        value: { data: testValue },
-        user_id: user.id
-      });
+      .insert(insertData);
 
     if (error) {
       toast({
@@ -68,10 +85,13 @@ const RLSTest = () => {
     } else {
       toast({
         title: "Success",
-        description: "Test data inserted successfully"
+        description: withTenant 
+          ? `Tenant-scoped data inserted (tenant: ${tenantId})` 
+          : "User-scoped data inserted successfully"
       });
       setTestKey("");
       setTestValue("");
+      if (withTenant) setTenantId("");
       fetchMyData();
     }
     setLoading(false);
@@ -207,33 +227,95 @@ const RLSTest = () => {
               Insert Test Data
             </CardTitle>
             <CardDescription>
-              Add data to test that you can only access your own records
+              Test user-scoped and tenant-scoped data isolation
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Key</label>
-                  <Input
-                    placeholder="e.g., test-key-1"
-                    value={testKey}
-                    onChange={(e) => setTestKey(e.target.value)}
-                  />
+            <Tabs defaultValue="user" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="user" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  User-Scoped
+                </TabsTrigger>
+                <TabsTrigger value="tenant" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Tenant-Scoped
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="user" className="space-y-4 mt-4">
+                <div className="bg-muted/50 p-3 rounded-lg text-sm">
+                  <p className="font-medium mb-1">User-Scoped Testing</p>
+                  <p className="text-muted-foreground">
+                    Data will be associated with your user ID. Only you can access it.
+                  </p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Value</label>
-                  <Input
-                    placeholder="e.g., test-value"
-                    value={testValue}
-                    onChange={(e) => setTestValue(e.target.value)}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Key</label>
+                    <Input
+                      placeholder="e.g., user-config-1"
+                      value={testKey}
+                      onChange={(e) => setTestKey(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Value</label>
+                    <Input
+                      placeholder="e.g., my-data"
+                      value={testValue}
+                      onChange={(e) => setTestValue(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
-              <Button onClick={insertTestData} disabled={loading} className="w-full">
-                Insert Test Record
-              </Button>
-            </div>
+                <Button onClick={() => insertTestData(false)} disabled={loading} className="w-full">
+                  Insert User-Scoped Record
+                </Button>
+              </TabsContent>
+
+              <TabsContent value="tenant" className="space-y-4 mt-4">
+                <div className="bg-muted/50 p-3 rounded-lg text-sm">
+                  <p className="font-medium mb-1">Tenant-Scoped Testing</p>
+                  <p className="text-muted-foreground">
+                    Simulate multi-tenant data. Records with the same tenant_id are isolated together.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Tenant ID (UUID)</label>
+                    <Input
+                      placeholder="e.g., 550e8400-e29b-41d4-a716-446655440000"
+                      value={tenantId}
+                      onChange={(e) => setTenantId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Use the same tenant ID for related records
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Key</label>
+                      <Input
+                        placeholder="e.g., tenant-config-1"
+                        value={testKey}
+                        onChange={(e) => setTestKey(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Value</label>
+                      <Input
+                        placeholder="e.g., tenant-data"
+                        value={testValue}
+                        onChange={(e) => setTestValue(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <Button onClick={() => insertTestData(true)} disabled={loading} className="w-full">
+                  Insert Tenant-Scoped Record
+                </Button>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -270,9 +352,15 @@ const RLSTest = () => {
                       <p className="text-sm text-muted-foreground">
                         Value: {JSON.stringify(item.value)}
                       </p>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        User ID: {item.user_id?.substring(0, 8)}...
-                      </p>
+                      <div className="flex gap-4 text-xs text-muted-foreground font-mono">
+                        <span>User: {item.user_id?.substring(0, 8)}...</span>
+                        {item.tenant_id && (
+                          <span className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            Tenant: {item.tenant_id.substring(0, 8)}...
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <Button 
                       variant="destructive" 
@@ -291,32 +379,63 @@ const RLSTest = () => {
         {/* Test Instructions */}
         <Card className="bg-muted/50">
           <CardHeader>
-            <CardTitle>How to Test RLS</CardTitle>
+            <CardTitle>How to Test RLS Isolation</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex gap-2">
-              <span className="font-bold">1.</span>
-              <span>Insert some test data using the form above</span>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                User-Scoped Testing
+              </h4>
+              <div className="space-y-2 text-sm pl-6">
+                <div className="flex gap-2">
+                  <span className="font-bold">1.</span>
+                  <span>Insert user-scoped data (no tenant ID)</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-bold">2.</span>
+                  <span>Open incognito and create a second user</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-bold">3.</span>
+                  <span>Verify the second user can't see the first user's data ✓</span>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <span className="font-bold">2.</span>
-              <span>Open an incognito window and create a second test user account</span>
+
+            <div>
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Tenant-Scoped Testing
+              </h4>
+              <div className="space-y-2 text-sm pl-6">
+                <div className="flex gap-2">
+                  <span className="font-bold">1.</span>
+                  <span>Insert records with tenant ID: <code className="bg-muted px-1 rounded">tenant-A-uuid</code></span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-bold">2.</span>
+                  <span>Insert more records with tenant ID: <code className="bg-muted px-1 rounded">tenant-B-uuid</code></span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-bold">3.</span>
+                  <span>Notice: Both tenants' data is visible (tenant policies require JWT tenant_id)</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="font-bold">4.</span>
+                  <span className="text-muted-foreground italic">
+                    In production, tenant_id comes from JWT and enforces isolation automatically
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <span className="font-bold">3.</span>
-              <span>Visit this page with the second user</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="font-bold">4.</span>
-              <span>Verify you can't see the first user's data</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="font-bold">5.</span>
-              <span>Try to insert data with the second user - it should work</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="font-bold">6.</span>
-              <span>Confirm each user only sees their own records ✓</span>
+
+            <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg">
+              <p className="text-sm">
+                <span className="font-semibold">💡 Note:</span> Tenant policies use{" "}
+                <code className="bg-muted px-1 rounded">current_tenant()</code> which reads from the JWT.
+                Without a tenant_id in your JWT, tenant policies won't filter data in this test environment.
+              </p>
             </div>
           </CardContent>
         </Card>
