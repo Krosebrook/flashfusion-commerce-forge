@@ -17,7 +17,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -94,6 +95,15 @@ const FlashFusionDashboard = () => {
                   >
                     <AlertCircle className="w-4 h-4 mr-2" />
                     Error Dashboard
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate("/rls-test")}
+                    className="hover:bg-muted"
+                  >
+                    <ShieldCheck className="w-4 h-4 mr-2" />
+                    RLS Test
                   </Button>
                 </>
               )}
