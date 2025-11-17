@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, CheckCircle, XCircle, Key, User, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TenantContextSimulator } from "@/components/TenantContextSimulator";
 
 interface KVItem {
   key: string;
@@ -174,6 +175,9 @@ const RLSTest = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Tenant Context Simulator */}
+        <TenantContextSimulator />
 
         {/* RLS Policy Status */}
         <Card>
