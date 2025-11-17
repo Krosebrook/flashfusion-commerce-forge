@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, CheckCircle, XCircle, Key, User, Building2, Download, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TenantContextSimulator } from "@/components/TenantContextSimulator";
+import { SecurityAuditScheduler } from "@/components/SecurityAuditScheduler";
 import { generateSecurityAuditReport, generateJSONReport, downloadReport } from "@/lib/securityAuditReport";
 import { 
   DropdownMenu,
@@ -265,6 +266,9 @@ const RLSTest = () => {
 
         {/* Tenant Context Simulator */}
         <TenantContextSimulator />
+
+        {/* Security Audit Scheduler */}
+        <SecurityAuditScheduler />
 
         {/* RLS Policy Status */}
         <Card>
